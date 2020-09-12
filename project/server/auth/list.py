@@ -5,41 +5,29 @@ from flask.views import MethodView
 
 from project.server import bcrypt, db
 from project.server.models import User
+import json
 
-auth_blueprint = Blueprint('auth', __name__)
+list_blueprint = Blueprint('list', __name__)
 
-class RegisterAPI(MethodView):
+class ListAPI(MethodView): 
     """
     User Registration Resource
     """
-
-    def get(self):
-    	responseObject = {
-    		'status': 'success',
-    		'message': 'Request successful but please send an HTTP POST request to register the user.'
-    	}
-    	return make_response(jsonify(responseObject)), 201
 
     def post(self):
         # get the post data
         post_data = request.get_json(); print(request)
         # check if user already exists
         user = User.query.filter_by(email=post_data.get('email')).first()
-        if not user:
+        if user:
+            userList = User.query.all()
+            userEmails=[]
+            for i in userList:
+                userEmails.append(i.email)
             try:
-                user = User(
-                    email=post_data.get('email'),
-                    password=post_data.get('password')
-                )
-
-                # insert the user
-                db.session.add(user)
-                db.session.commit()
-                # generate the auth token
-                #auth_token = user.encode_auth_token(user.id)
                 responseObject = {
                     'status': 'success',
-                    'message': 'Successfully registered.',
+                    'message': json.dumps(userEmails),
                     #'auth_token': auth_token.decode()
                 }
                 return make_response(jsonify(responseObject)), 201
@@ -52,17 +40,17 @@ class RegisterAPI(MethodView):
         else:
             responseObject = {
                 'status': 'fail',
-                'message': 'User already exists. Please Log in.',
+                'message': 'Please Log in.',
             }
             return make_response(jsonify(responseObject)), 202
 
 
 # define the API resources
-registration_view = RegisterAPI.as_view('register_api')
+list_view = ListAPI.as_view('list_api')
 
 # add Rules for API Endpoints
-auth_blueprint.add_url_rule(
-    '/auth/register',
-    view_func=registration_view,
-    methods=['POST', 'GET']
+list_blueprint.add_url_rule(
+    '/users/index',
+    view_func=list_view,
+    methods=['POST']
 )
